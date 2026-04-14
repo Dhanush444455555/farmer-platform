@@ -81,6 +81,8 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
   const [lastTap, setLastTap] = useState(0);
   const [heartAnim, setHeartAnim] = useState(false);
   const [followed, setFollowed] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleDoubleTap = () => {
     const now = Date.now();
@@ -102,6 +104,37 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
       try {
         await fetch(`${API}/api/posts/${post._id}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: 'local-user' }) });
       } catch {}
+    }
+  };
+
+  const handleShare = async () => {
+    const shareText = `${authorName}: ${post.content ?? ''}`;
+    const shareUrl = post.imageUrl ?? window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'FarmFeed Post', text: shareText, url: shareUrl });
+      } catch { /* user cancelled */ }
+    } else {
+      setShowShare(true);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    const text = `${authorName}: ${post.content ?? ''} ${post.imageUrl ?? window.location.href}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -167,7 +200,7 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
           <button onClick={() => setShowComments(s => !s)} className="ig-icon-btn">
             <MessageCircle size={26} strokeWidth={1.8} />
           </button>
-          <button className="ig-icon-btn">
+          <button className="ig-icon-btn" onClick={handleShare}>
             <Share2 size={24} strokeWidth={1.8} />
           </button>
         </div>
@@ -233,6 +266,54 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
           <button onClick={handleAddComment} className="ig-post-btn">Post</button>
         )}
       </div>
+
+      {/* Share Sheet */}
+      {showShare && (
+        <div className="ig-share-backdrop" onClick={() => setShowShare(false)}>
+          <div className="ig-share-sheet" onClick={e => e.stopPropagation()}>
+            <div className="ig-share-handle" />
+            <p className="ig-share-title">Share post</p>
+            <div className="ig-share-options">
+              <button className="ig-share-option" onClick={() => { handleCopyLink(); setShowShare(false); }}>
+                <span className="ig-share-icon" style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)' }}>🔗</span>
+                <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+              </button>
+              <a
+                className="ig-share-option"
+                href={`https://wa.me/?text=${encodeURIComponent((post.content ?? '') + ' ' + (post.imageUrl ?? window.location.href))}`}
+                target="_blank" rel="noopener noreferrer"
+                onClick={() => setShowShare(false)}
+              >
+                <span className="ig-share-icon" style={{ background: 'linear-gradient(135deg,#25d366,#128c7e)' }}>💬</span>
+                <span>WhatsApp</span>
+              </a>
+              <a
+                className="ig-share-option"
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent((post.content ?? '') + ' via FarmPlatform')}&url=${encodeURIComponent(post.imageUrl ?? window.location.href)}`}
+                target="_blank" rel="noopener noreferrer"
+                onClick={() => setShowShare(false)}
+              >
+                <span className="ig-share-icon" style={{ background: '#000' }}>𝕏</span>
+                <span>Twitter / X</span>
+              </a>
+              <a
+                className="ig-share-option"
+                href={`mailto:?subject=Check this farm post&body=${encodeURIComponent((post.content ?? '') + '\n' + (post.imageUrl ?? window.location.href))}`}
+                onClick={() => setShowShare(false)}
+              >
+                <span className="ig-share-icon" style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>✉️</span>
+                <span>Email</span>
+              </a>
+            </div>
+            <button className="ig-share-cancel" onClick={() => setShowShare(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Copied toast */}
+      {copied && (
+        <div className="ig-copied-toast">✅ Link copied to clipboard!</div>
+      )}
     </div>
   );
 };
@@ -428,6 +509,89 @@ const CreatePostModal: React.FC<{ onClose: () => void; onPost: (post: Post) => v
   );
 };
 
+// ─── User Search Panel ───────────────────────────────────────────────────────────
+interface SearchUser { userId: string; displayName: string; initials: string; avatarColor: string; bio?: string; }
+
+const SearchPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchUser[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!val.trim()) { setResults([]); setSearched(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      setSearched(true);
+      try {
+        const res = await fetch(`${API}/api/users/search?q=${encodeURIComponent(val.trim())}`);
+        const data = await res.json();
+        setResults(Array.isArray(data) ? data : []);
+      } catch { setResults([]); }
+      finally { setLoading(false); }
+    }, 300);
+  };
+
+  return (
+    <>
+      <div className="ig-search-backdrop" onClick={onClose} />
+      <div className="ig-search-panel">
+        {/* Header */}
+        <div className="ig-search-header">
+          <div className="ig-search-input-wrap">
+            <Search size={18} style={{ color: '#737373', flexShrink: 0 }} />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={handleChange}
+              placeholder="Search people…"
+              className="ig-search-input"
+            />
+            {query && (
+              <button onClick={() => { setQuery(''); setResults([]); setSearched(false); }} className="ig-search-clear">
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          <button onClick={onClose} className="ig-icon-btn" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>Cancel</button>
+        </div>
+
+        {/* Results */}
+        <div className="ig-search-results">
+          {loading && (
+            <div className="ig-search-status">Searching…</div>
+          )}
+          {!loading && searched && results.length === 0 && (
+            <div className="ig-search-status">No users found for "{query}"</div>
+          )}
+          {!loading && !searched && (
+            <div className="ig-search-status ig-search-hint">Search for farmers, growers, and more.</div>
+          )}
+          {results.map(user => (
+            <div key={user.userId} className="ig-search-user-row">
+              <div className="ig-post-avatar" style={{ background: user.avatarColor ?? 'linear-gradient(135deg,#10b981,#059669)', width: 48, height: 48, fontSize: '0.9rem', flexShrink: 0 }}>
+                {user.initials ?? user.userId.slice(0, 2).toUpperCase()}
+              </div>
+              <div className="ig-search-user-info">
+                <p className="ig-search-user-id">@{user.userId}</p>
+                <p className="ig-search-user-name">{user.displayName}</p>
+                {user.bio && <p className="ig-search-user-bio">{user.bio}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+};
+
 // ─── Main FarmFeed ─────────────────────────────────────────────────────────────
 export const FarmFeed: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>(FALLBACK_POSTS);
@@ -435,6 +599,7 @@ export const FarmFeed: React.FC = () => {
   const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null);
   const [yourStoryUrl, setYourStoryUrl] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const addStoryRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -834,6 +999,159 @@ export const FarmFeed: React.FC = () => {
         }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ── User Search Panel ───────────────────────── */
+        .ig-search-backdrop {
+          position: fixed; inset: 0;
+          background: rgba(0,0,0,0.4);
+          z-index: 200;
+          animation: fadeIn 0.2s ease;
+        }
+        .ig-search-panel {
+          position: fixed;
+          top: 0; left: 50%; transform: translateX(-50%);
+          width: 100%; max-width: 470px;
+          background: #fff;
+          z-index: 201;
+          border-radius: 0 0 20px 20px;
+          box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+          animation: slideDown 0.25s cubic-bezier(0.4,0,0.2,1);
+          max-height: 80vh;
+          display: flex;
+          flex-direction: column;
+        }
+        @media (prefers-color-scheme: dark) {
+          .ig-search-panel { background: #1a1a1a; }
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .ig-search-header {
+          display: flex; align-items: center; gap: 0.75rem;
+          padding: 0.85rem 1rem;
+          border-bottom: 1px solid #efefef;
+        }
+        @media (prefers-color-scheme: dark) { .ig-search-header { border-color: #262626; } }
+        .ig-search-input-wrap {
+          flex: 1; display: flex; align-items: center; gap: 0.5rem;
+          background: #f0f0f0; border-radius: 12px; padding: 0.5rem 0.75rem;
+        }
+        @media (prefers-color-scheme: dark) { .ig-search-input-wrap { background: #262626; } }
+        .ig-search-input {
+          flex: 1; background: none; border: none; outline: none;
+          font-family: inherit; font-size: 0.9rem; color: #0f172a;
+        }
+        @media (prefers-color-scheme: dark) { .ig-search-input { color: #f8fafc; } }
+        .ig-search-input::placeholder { color: #a3a3a3; }
+        .ig-search-clear {
+          background: none; border: none; cursor: pointer;
+          color: #737373; display: flex; align-items: center; padding: 0;
+        }
+        .ig-search-results {
+          overflow-y: auto;
+          flex: 1;
+        }
+        .ig-search-status {
+          padding: 1.5rem 1rem;
+          text-align: center;
+          font-size: 0.875rem;
+          color: #737373;
+        }
+        .ig-search-hint { color: #a3a3a3; }
+        .ig-search-user-row {
+          display: flex; align-items: center; gap: 0.85rem;
+          padding: 0.75rem 1rem;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .ig-search-user-row:hover { background: #fafafa; }
+        @media (prefers-color-scheme: dark) { .ig-search-user-row:hover { background: #111; } }
+        .ig-search-user-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .ig-search-user-id { font-weight: 700; font-size: 0.92rem; color: #0f172a; margin: 0; }
+        @media (prefers-color-scheme: dark) { .ig-search-user-id { color: #f8fafc; } }
+        .ig-search-user-name { font-size: 0.8rem; color: #737373; margin: 0; }
+        .ig-search-user-bio {
+          font-size: 0.78rem; color: #a3a3a3; margin: 0;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* ── Share Sheet ─────────────────────────── */
+        .ig-share-backdrop {
+          position: fixed; inset: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 300;
+          display: flex; align-items: flex-end; justify-content: center;
+          animation: fadeIn 0.2s ease;
+        }
+        .ig-share-sheet {
+          background: #fff;
+          width: 100%; max-width: 470px;
+          border-radius: 20px 20px 0 0;
+          padding: 0.75rem 1rem 2rem;
+          animation: slideUp 0.28s cubic-bezier(0.4,0,0.2,1);
+          box-shadow: 0 -4px 40px rgba(0,0,0,0.15);
+        }
+        @media (prefers-color-scheme: dark) {
+          .ig-share-sheet { background: #1a1a1a; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
+        }
+        .ig-share-handle {
+          width: 40px; height: 4px; border-radius: 999px;
+          background: #dbdbdb; margin: 0 auto 1rem;
+        }
+        .ig-share-title {
+          text-align: center; font-weight: 700; font-size: 0.95rem;
+          color: #0f172a; margin: 0 0 1rem;
+        }
+        @media (prefers-color-scheme: dark) { .ig-share-title { color: #f8fafc; } }
+        .ig-share-options {
+          display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;
+          margin-bottom: 1rem;
+        }
+        .ig-share-option {
+          display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+          background: none; border: none; cursor: pointer;
+          text-decoration: none; color: #0f172a;
+          font-family: inherit; font-size: 0.75rem; font-weight: 500;
+          padding: 0.5rem 0.25rem; border-radius: 12px;
+          transition: background 0.15s;
+        }
+        .ig-share-option:hover { background: #f5f5f5; }
+        @media (prefers-color-scheme: dark) {
+          .ig-share-option { color: #f8fafc; }
+          .ig-share-option:hover { background: #262626; }
+        }
+        .ig-share-icon {
+          width: 52px; height: 52px; border-radius: 14px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1.4rem;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .ig-share-cancel {
+          width: 100%; background: #f5f5f5; border: none; border-radius: 14px;
+          padding: 0.85rem; font-family: inherit; font-size: 0.95rem; font-weight: 600;
+          color: #0f172a; cursor: pointer; transition: background 0.15s;
+        }
+        .ig-share-cancel:hover { background: #ebebeb; }
+        @media (prefers-color-scheme: dark) {
+          .ig-share-cancel { background: #262626; color: #f8fafc; }
+          .ig-share-cancel:hover { background: #333; }
+        }
+
+        /* ── Copied Toast ────────────────────────── */
+        .ig-copied-toast {
+          position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+          background: rgba(0,0,0,0.85); color: white;
+          padding: 0.6rem 1.25rem; border-radius: 999px;
+          font-size: 0.85rem; font-weight: 600;
+          z-index: 400; white-space: nowrap;
+          animation: fadeIn 0.2s ease;
+          pointer-events: none;
+        }
       `}</style>
 
       {/* Story Viewer overlay */}
@@ -857,6 +1175,9 @@ export const FarmFeed: React.FC = () => {
       {/* Hidden story file input */}
       <input ref={addStoryRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleStoryFileChange} />
 
+      {/* ── User Search Panel ── */}
+      {showSearch && <SearchPanel onClose={() => setShowSearch(false)} />}
+
       {/* ── Top Navbar ── */}
       <nav className="ig-navbar">
         <span className="ig-navbar-logo">🌿 FarmFeed</span>
@@ -865,7 +1186,7 @@ export const FarmFeed: React.FC = () => {
           <button className="ig-create-btn" onClick={() => setShowCreate(true)}>
             <Plus size={18} strokeWidth={2.5} />
           </button>
-          <button className="ig-icon-btn">
+          <button className="ig-icon-btn" onClick={() => setShowSearch(true)}>
             <Search size={24} />
           </button>
         </div>
