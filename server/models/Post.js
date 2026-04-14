@@ -13,6 +13,7 @@ const postSchema = new mongoose.Schema({
   content: { type: String, required: true },
   imageUrl: { type: String, default: null },
   likes: [{ type: String }], // array of user identifiers who liked
+  taggedUsers: [{ type: String }], // @mentioned userIds
   comments: [commentSchema],
   createdAt: { type: Date, default: Date.now }
 });

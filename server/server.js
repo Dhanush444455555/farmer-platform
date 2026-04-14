@@ -19,6 +19,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/posts', require('./routes/postRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -33,8 +34,11 @@ app.use((err, req, res, next) => {
 
 // Connect to MongoDB then start server
 mongoose.connect(MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log('✅ Connected to MongoDB');
+    // Seed demo users on first run
+    const User = require('./models/User');
+    await User.seedIfEmpty();
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
     });

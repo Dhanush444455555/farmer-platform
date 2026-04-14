@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StoryViewer } from './Stories';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Send, Bookmark, Search, Bell, Plus, Image, X, Home, Compass, Film, ShoppingBag, User } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Send, Bookmark, Search, Bell, Plus, Image, X, Home, Film, ShoppingBag, User, AtSign } from 'lucide-react';
 
 const API = 'http://localhost:5000';
 
@@ -19,6 +19,14 @@ interface Comment {
   text: string;
 }
 
+interface TaggedUser {
+  userId: string;
+  displayName: string;
+  initials: string;
+  avatarColor: string;
+  bio?: string;
+}
+
 interface Post {
   _id?: string;
   id?: string | number;
@@ -30,9 +38,20 @@ interface Post {
   imageUrl?: string;
   likes?: unknown[];
   comments?: Comment[];
+  taggedUsers?: string[];
   createdAt?: string;
   timeAgo?: string;
 }
+
+// Render caption with @mentions highlighted as blue links
+const renderCaption = (text: string) => {
+  const parts = text.split(/(@[\w.]+)/g);
+  return parts.map((part, i) =>
+    part.startsWith('@')
+      ? <span key={i} style={{ color: '#0095f6', fontWeight: 600, cursor: 'pointer' }}>{part}</span>
+      : <span key={i}>{part}</span>
+  );
+};
 
 const MOCK_STORIES: Story[] = [
   { id: 1, authorName: 'sarah_j', authorInitials: 'SJ', authorColor: 'linear-gradient(135deg, #f59e0b, #d97706)', imageUrl: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&q=80', seen: false },
@@ -161,12 +180,23 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
       <div className="ig-post-body">
         {likeCount > 0 && <p className="ig-likes-count">{likeCount.toLocaleString()} {likeCount === 1 ? 'like' : 'likes'}</p>}
 
-        {/* Caption */}
+        {/* Caption with @mentions */}
         {post.content && (
           <p className="ig-caption">
             <span className="ig-caption-user">{authorName} </span>
-            {post.content}
+            {renderCaption(post.content)}
           </p>
+        )}
+
+        {/* Tagged users chips */}
+        {post.taggedUsers && post.taggedUsers.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.25rem' }}>
+            {post.taggedUsers.map(uid => (
+              <span key={uid} style={{ fontSize: '0.78rem', background: 'rgba(0,149,246,0.1)', color: '#0095f6', borderRadius: '999px', padding: '2px 10px', fontWeight: 600 }}>
+                @{uid}
+              </span>
+            ))}
+          </div>
         )}
 
         {/* View comments link */}
@@ -207,13 +237,75 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
   );
 };
 
-// ─── Create Post Modal ────────────────────────────────────────────────────────
+// ─── Create Post Modal with @Mention Tagging ─────────────────────────────────
 const CreatePostModal: React.FC<{ onClose: () => void; onPost: (post: Post) => void }> = ({ onClose, onPost }) => {
   const [content, setContent] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [taggedUsers, setTaggedUsers] = useState<TaggedUser[]>([]);
+  // Mention search state
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionResults, setMentionResults] = useState<TaggedUser[]>([]);
+  const [mentionLoading, setMentionLoading] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Detect @ typing in textarea
+  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setContent(val);
+    // Find if cursor is right after an @ word
+    const cursor = e.target.selectionStart;
+    const textBefore = val.slice(0, cursor);
+    const atMatch = textBefore.match(/@([\w.]*)$/);
+    if (atMatch) {
+      const query = atMatch[1];
+      setMentionQuery(query);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(async () => {
+        if (!query && query !== '') return;
+        setMentionLoading(true);
+        try {
+          const res = await fetch(`${API}/api/users/search?q=${encodeURIComponent(query)}`);
+          const data = await res.json();
+          setMentionResults(data);
+        } catch {
+          setMentionResults([]);
+        } finally {
+          setMentionLoading(false);
+        }
+      }, 250);
+    } else {
+      setMentionQuery(null);
+      setMentionResults([]);
+    }
+  }, []);
+
+  // Insert the selected user into caption
+  const handleSelectMention = (user: TaggedUser) => {
+    if (textareaRef.current) {
+      const cursor = textareaRef.current.selectionStart;
+      const textBefore = content.slice(0, cursor);
+      const textAfter = content.slice(cursor);
+      // Replace the partial @query with @userId
+      const replaced = textBefore.replace(/@([\w.]*)$/, `@${user.userId} `);
+      setContent(replaced + textAfter);
+    }
+    // Add to tagged users (avoid duplicates)
+    setTaggedUsers(prev =>
+      prev.find(u => u.userId === user.userId) ? prev : [...prev, user]
+    );
+    setMentionQuery(null);
+    setMentionResults([]);
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const removeTag = (userId: string) => {
+    setTaggedUsers(prev => prev.filter(u => u.userId !== userId));
+    setContent(prev => prev.replace(new RegExp(`@${userId}\\s?`, 'g'), ''));
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -234,13 +326,14 @@ const CreatePostModal: React.FC<{ onClose: () => void; onPost: (post: Post) => v
       formData.append('authorInitials', 'JD');
       formData.append('authorColor', 'linear-gradient(135deg, #10b981, #059669)');
       formData.append('content', content);
+      formData.append('taggedUsers', JSON.stringify(taggedUsers.map(u => u.userId)));
       if (file) formData.append('image', file);
       let newPost: Post;
       try {
         const res = await fetch(`${API}/api/posts`, { method: 'POST', body: formData });
         newPost = await res.json();
       } catch {
-        newPost = { _id: String(Date.now()), author: 'You', authorInitials: 'JD', authorColor: 'linear-gradient(135deg,#10b981,#059669)', content, imageUrl: preview ?? undefined, likes: [], comments: [], timeAgo: 'Just now' };
+        newPost = { _id: String(Date.now()), author: 'You', authorInitials: 'JD', authorColor: 'linear-gradient(135deg,#10b981,#059669)', content, imageUrl: preview ?? undefined, likes: [], comments: [], taggedUsers: taggedUsers.map(u => u.userId), timeAgo: 'Just now' };
       }
       onPost(newPost);
       onClose();
@@ -261,14 +354,61 @@ const CreatePostModal: React.FC<{ onClose: () => void; onPost: (post: Post) => v
         </div>
         <div className="ig-modal-body">
           <div className="ig-post-avatar" style={{ background: 'linear-gradient(135deg,#10b981,#059669)', margin: '0 1rem 0 0', flexShrink: 0 }}>JD</div>
-          <textarea
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            placeholder="Write a caption…"
-            className="ig-modal-textarea"
-            autoFocus
-          />
+          <div style={{ flex: 1, position: 'relative' }}>
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={handleContentChange}
+              placeholder="Write a caption… type @ to tag someone"
+              className="ig-modal-textarea"
+              autoFocus
+            />
+            {/* @Mention Dropdown */}
+            {mentionQuery !== null && (
+              <div className="ig-mention-dropdown">
+                {mentionLoading && (
+                  <div className="ig-mention-loading">Searching…</div>
+                )}
+                {!mentionLoading && mentionResults.length === 0 && mentionQuery.length > 0 && (
+                  <div className="ig-mention-empty">No users found for "@{mentionQuery}"</div>
+                )}
+                {!mentionLoading && mentionQuery.length === 0 && (
+                  <div className="ig-mention-hint">Start typing a username…</div>
+                )}
+                {mentionResults.map(user => (
+                  <button
+                    key={user.userId}
+                    className="ig-mention-item"
+                    onMouseDown={e => { e.preventDefault(); handleSelectMention(user); }}
+                  >
+                    <div className="ig-mention-avatar" style={{ background: user.avatarColor }}>
+                      {user.initials}
+                    </div>
+                    <div className="ig-mention-info">
+                      <span className="ig-mention-userid">@{user.userId}</span>
+                      <span className="ig-mention-name">{user.displayName}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Tagged Users Chips */}
+        {taggedUsers.length > 0 && (
+          <div className="ig-tagged-chips">
+            <AtSign size={14} style={{ opacity: 0.6, flexShrink: 0 }} />
+            {taggedUsers.map(u => (
+              <div key={u.userId} className="ig-tag-chip">
+                <div className="ig-tag-chip-avatar" style={{ background: u.avatarColor }}>{u.initials}</div>
+                <span>@{u.userId}</span>
+                <button onClick={() => removeTag(u.userId)} className="ig-tag-chip-remove"><X size={12} /></button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {preview && (
           <div style={{ position: 'relative' }}>
             <img src={preview} alt="preview" style={{ width: '100%', maxHeight: '320px', objectFit: 'cover', display: 'block' }} />
@@ -614,7 +754,7 @@ export const FarmFeed: React.FC = () => {
         .ig-share-btn:disabled { opacity: 0.4; cursor: default; }
         .ig-modal-body { display: flex; align-items: flex-start; padding: 1rem; gap: 0.75rem; }
         .ig-modal-textarea {
-          flex: 1; border: none; outline: none; resize: none;
+          width: 100%; border: none; outline: none; resize: none;
           font-family: inherit; font-size: 1rem; color: #0f172a;
           background: transparent; min-height: 80px; line-height: 1.5;
         }
@@ -637,6 +777,61 @@ export const FarmFeed: React.FC = () => {
           color: #0f172a; font-family: inherit; font-size: 0.9rem; font-weight: 500;
         }
         @media (prefers-color-scheme: dark) { .ig-modal-media-btn { color: #f8fafc; } }
+
+        /* ── @Mention Dropdown ──────────────────── */
+        .ig-mention-dropdown {
+          position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+          background: #fff; border: 1px solid #dbdbdb; border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.18); z-index: 999;
+          max-height: 240px; overflow-y: auto;
+          animation: fadeIn 0.15s ease;
+        }
+        @media (prefers-color-scheme: dark) {
+          .ig-mention-dropdown { background: #262626; border-color: #363636; }
+        }
+        .ig-mention-loading, .ig-mention-empty, .ig-mention-hint {
+          padding: 0.75rem 1rem; font-size: 0.85rem; color: #737373; text-align: center;
+        }
+        .ig-mention-item {
+          display: flex; align-items: center; gap: 0.75rem;
+          width: 100%; padding: 0.6rem 1rem;
+          background: none; border: none; cursor: pointer;
+          text-align: left; transition: background 0.15s;
+        }
+        .ig-mention-item:hover { background: #fafafa; }
+        @media (prefers-color-scheme: dark) {
+          .ig-mention-item:hover { background: #1a1a1a; }
+        }
+        .ig-mention-avatar {
+          width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          color: white; font-weight: 700; font-size: 0.8rem;
+        }
+        .ig-mention-info { display: flex; flex-direction: column; gap: 1px; }
+        .ig-mention-userid { font-weight: 700; font-size: 0.87rem; color: #0f172a; }
+        @media (prefers-color-scheme: dark) { .ig-mention-userid { color: #f8fafc; } }
+        .ig-mention-name { font-size: 0.78rem; color: #737373; }
+
+        /* ── Tagged Chips ───────────────────────── */
+        .ig-tagged-chips {
+          display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
+          padding: 0.5rem 1rem; border-top: 1px solid #efefef;
+        }
+        @media (prefers-color-scheme: dark) { .ig-tagged-chips { border-color: #262626; } }
+        .ig-tag-chip {
+          display: flex; align-items: center; gap: 0.35rem;
+          background: rgba(0,149,246,0.1); border-radius: 999px;
+          padding: 3px 8px 3px 4px; font-size: 0.8rem; color: #0095f6; font-weight: 600;
+        }
+        .ig-tag-chip-avatar {
+          width: 22px; height: 22px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          color: white; font-size: 0.6rem; font-weight: 700; flex-shrink: 0;
+        }
+        .ig-tag-chip-remove {
+          background: none; border: none; cursor: pointer;
+          color: #0095f6; display: flex; align-items: center; padding: 0;
+        }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       `}</style>

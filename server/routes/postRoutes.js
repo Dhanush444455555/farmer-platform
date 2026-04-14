@@ -16,12 +16,16 @@ router.get('/', async (req, res) => {
 // POST create new post (with optional image)
 router.post('/', upload.single('image'), async (req, res) => {
   try {
-    const { author, authorInitials, authorColor, content } = req.body;
+    const { author, authorInitials, authorColor, content, taggedUsers } = req.body;
     const imageUrl = req.file
       ? `http://localhost:5000/uploads/${req.file.filename}`
       : null;
 
-    const post = new Post({ author, authorInitials, authorColor, content, imageUrl });
+    const tagged = taggedUsers
+      ? (Array.isArray(taggedUsers) ? taggedUsers : JSON.parse(taggedUsers))
+      : [];
+
+    const post = new Post({ author, authorInitials, authorColor, content, imageUrl, taggedUsers: tagged });
     await post.save();
     res.status(201).json(post);
   } catch (err) {
