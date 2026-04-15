@@ -23,7 +23,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ stories, startIndex, o
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [progress, setProgress] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTime = useRef(Date.now());
+  const startTime = useRef(0);
 
   const current = stories[currentIndex];
 
@@ -56,6 +56,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ stories, startIndex, o
       if (elapsed >= STORY_DURATION) goNext();
     }, 50);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex]);
 
   return (

@@ -20,6 +20,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/crops', require('./routes/cropRoutes'));
 
 // Health check
 app.get('/health', (req, res) => {

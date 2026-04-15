@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Leaf, ShoppingBag, IndianRupee, BarChart2,
-  Cpu, Gift, Bell, MessageCircle, ChevronRight, Activity, Sprout, Cloud, ArrowRight
+  Cpu, Gift, Bell, MessageCircle, ChevronRight
 } from 'lucide-react';
 
 interface FolderItem {

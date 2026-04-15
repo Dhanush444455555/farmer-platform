@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Navbar } from '../components/common/Navbar';
 import { Sidebar } from '../components/common/Sidebar';
 import { MarketplaceGrid } from '../components/marketplace/MarketplaceGrid';
@@ -8,6 +8,7 @@ import { CartSummary } from '../components/orders/CartSummary';
 import { FarmFeed } from '../components/feed/FarmFeed';
 import { LoginCard } from '../components/auth/LoginCard';
 import { FeaturePage } from '../components/features/FeaturePage';
+import { MyCropsPage } from '../components/features/MyCropsPage';
 import { AIAssistant } from '../components/features/AIAssistant';
 import { MarketPrices } from '../components/features/MarketPrices';
 import './App.css';
@@ -37,7 +38,7 @@ const App: React.FC = () => {
             <Route path="/mkt-listings" element={<MarketplaceGrid />} />
             <Route path="/farmfeed" element={<FarmFeed />} />
             {/* Feature pages */}
-            <Route path="/my-crops"      element={<FeaturePage sectionIndex={0} />} />
+            <Route path="/my-crops"      element={<MyCropsPage />} />
             <Route path="/farm-finance"  element={<FeaturePage sectionIndex={2} />} />
             <Route path="/market-prices" element={<MarketPrices />} />
             <Route path="/ai-assistant"  element={<AIAssistant />} />

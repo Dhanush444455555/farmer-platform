@@ -2,7 +2,11 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 import time
 import random
+from pydantic import BaseModel
 import uvicorn
+
+class CropRequest(BaseModel):
+    crop_name: str
 
 app = FastAPI(title="Farm Platform AI Engine")
 
@@ -74,6 +78,42 @@ async def analyze_crop(file: UploadFile = File(...)):
     result["confidence"] = random.randint(82, 98)
     
     return result
+
+@app.post("/crop-maintenance")
+async def crop_maintenance(request: CropRequest):
+    # Simulate processing time for the AI model
+    time.sleep(0.8)
+    
+    crop = request.crop_name.lower().strip()
+    
+    # Simple simulated knowledge base
+    rules = {
+        "tomato": ["Water daily at the base.", "Prune lower leaves to prevent blight.", "Apply nitrogen-rich fertilizer every 2 weeks."],
+        "wheat": ["Water every 3-4 days.", "Monitor for rust and aphids.", "Apply Urea (Nitrogen) if yellowing occurs."],
+        "corn": ["Heavy watering required during silking.", "Side-dress with nitrogen when knee-high.", "Watch for corn borers."],
+        "rice": ["Maintain continuous flooding (2-5 cm).", "Apply top dressing 30 days after transplanting.", "Check for stem borers."],
+        "potato": ["Water consistently to keep soil moist.", "Hill up soil around stems as they grow.", "Spray for potato beetles if seen."]
+    }
+    
+    # Generic fallback
+    default_maintenance = [
+        "Water moderately based on soil moisture.",
+        "Check closely for common pests.",
+        "Apply basic balanced NPK fertilizer."
+    ]
+    
+    # Find matching crop or fallback
+    maintenance_tasks = default_maintenance
+    for key, value in rules.items():
+        if key in crop:
+            maintenance_tasks = value
+            break
+            
+    return {
+        "crop": request.crop_name,
+        "daily_maintenance": maintenance_tasks,
+        "confidence": random.randint(85, 99)
+    }
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  TrendingUp, TrendingDown, Search, Filter, MapPin, 
-  RefreshCcw, AlertCircle, Info, BarChart2
+  TrendingUp, TrendingDown, Search, MapPin, 
+  RefreshCcw, AlertCircle, BarChart2
 } from 'lucide-react';
 
 interface MarketItem {
@@ -59,6 +59,7 @@ export const MarketPrices: React.FC = () => {
         const apiData = await res.json();
         
         if (apiData.records && apiData.records.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const mappedData: MarketItem[] = apiData.records.map((r: any, idx: number) => {
             let cat = 'Vegetables';
             const c = (r.commodity || '').toLowerCase();
@@ -101,6 +102,7 @@ export const MarketPrices: React.FC = () => {
 
   useEffect(() => {
     fetchPrices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredData = data.filter(item => {

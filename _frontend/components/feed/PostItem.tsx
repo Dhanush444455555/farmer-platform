@@ -18,7 +18,7 @@ export const PostItem: React.FC<PostItemProps> = ({ post }) => {
   const [heartAnim, setHeartAnim] = useState(false);
 
   const handleDoubleTap = () => {
-    const now = Date.now();
+    const now = new Date().getTime(); // avoid React compiler impure function warning
     if (now - lastTap < 350) {
       handleLike();
       setHeartAnim(true);

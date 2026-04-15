@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import {
   ScanLine, Microscope, Droplets, CalendarDays,
   Upload, X, Loader2, CheckCircle2, AlertTriangle,
-  ChevronRight, Leaf, FlaskConical, Sprout, Info, Camera,
+  FlaskConical, Sprout, Info, Camera,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ const DiseaseScanner: React.FC = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
-    } catch (err) {
+    } catch {
       alert('Camera access denied or could not be started.');
     }
   };
@@ -191,7 +191,7 @@ const DiseaseScanner: React.FC = () => {
           if (res.ok) {
             analysisResult = await res.json();
           }
-        } catch (backendErr) {
+        } catch {
           console.log("Python backend is not running, using fallback...");
         }
       }

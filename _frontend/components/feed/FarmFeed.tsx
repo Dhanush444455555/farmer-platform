@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StoryViewer } from './Stories';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Send, Bookmark, Search, Bell, Plus, Image, X, Home, Film, ShoppingBag, User, AtSign } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Search, Bell, Plus, Image, X, Home, Film, ShoppingBag, User, AtSign } from 'lucide-react';
 
 const API = 'http://localhost:5000';
 
@@ -103,7 +103,7 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
     if (post._id) {
       try {
         await fetch(`${API}/api/posts/${post._id}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: 'local-user' }) });
-      } catch {}
+      } catch { /* ignore */ }
     }
   };
 
@@ -146,7 +146,7 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
     if (post._id) {
       try {
         await fetch(`${API}/api/posts/${post._id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ author: 'You', text: newCmt.text }) });
-      } catch {}
+      } catch { /* ignore */ }
     }
   };
 
