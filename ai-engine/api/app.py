@@ -79,6 +79,34 @@ async def analyze_crop(file: UploadFile = File(...)):
     
     return result
 
+class InsuranceRiskRequest(BaseModel):
+    crop_name: str
+    state: str
+    sum_insured: int
+
+@app.post("/analyze-insurance-risk")
+async def analyze_insurance_risk(request: InsuranceRiskRequest):
+    time.sleep(1.2) # Simulate processing
+    risk_factors = ["Weather Volatility", "Pest History", "Market Fluctuation", "Soil Degradation"]
+    
+    # Calculate simulated dynamic risk index
+    base_risk = random.randint(10, 40)
+    if request.state.lower() in ["maharashtra", "gujarat"]:
+        base_risk += 15 # Drought risk
+    if request.crop_name.lower() in ["cotton", "sugarcane"]:
+        base_risk += 10 # Cash crop volatility
+        
+    recommended_premium = max(1.5, round((base_risk * 0.1), 2))
+    
+    return {
+        "crop": request.crop_name,
+        "state": request.state,
+        "risk_index": base_risk,
+        "primary_risk": random.choice(risk_factors),
+        "ai_recommended_premium_rate": f"{recommended_premium}%",
+        "market_viability": "High" if base_risk < 35 else "Moderate"
+    }
+
 @app.post("/crop-maintenance")
 async def crop_maintenance(request: CropRequest):
     # Simulate processing time for the AI model

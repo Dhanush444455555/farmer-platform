@@ -242,10 +242,11 @@ export const MyCropsPage: React.FC = () => {
     const daysAgo = Math.floor((Date.now() - new Date(plantedAt).getTime()) / 86400000);
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const today = new Date().getDay(); // 0=Sun
+    const safeTasks = tasks.length > 0 ? tasks : ['🌱 Check your crop today'];
     return Array.from({ length: 7 }, (_, i) => {
-      const dayLabel = days[(today - 1 + i) % 7] || days[i % 7];
+      const dayLabel = days[(today - 1 + i + 7) % 7] || days[i % 7];
       const isToday = i === 0;
-      const task = tasks[i % tasks.length] ?? tasks[0];
+      const task = safeTasks[i % safeTasks.length];
       return { dayLabel, isToday, task, day: daysAgo + i };
     });
   };
@@ -446,28 +447,52 @@ export const MyCropsPage: React.FC = () => {
         .mcp-progress-bar-wrap { background: #e2e8f0; border-radius: 999px; height: 6px; overflow: hidden; margin-top: 0.5rem; }
         .mcp-progress-bar { height: 100%; border-radius: 999px; background: linear-gradient(90deg,#10b981,#059669); transition: width 0.4s ease; }
 
-        /* ── 7-Day Roadmap ── */
-        .mcp-roadmap { display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
-        .mcp-roadmap::-webkit-scrollbar { display: none; }
-        .mcp-day-card {
-          flex-shrink: 0; width: 80px;
-          border-radius: 14px; padding: 0.75rem 0.5rem;
-          display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+        /* ── 7-Day Roadmap (dashboard section) ── */
+        .mcp-roadmap-section {
+          background: white;
+          border-radius: 16px;
           border: 1.5px solid #e2e8f0;
-          background: white; transition: all 0.15s;
+          overflow: hidden;
+          margin-bottom: 0;
         }
+        .mcp-roadmap-section-header {
+          display: flex; align-items: center; gap: 0.75rem;
+          padding: 1rem 1.25rem;
+          background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+          border-bottom: 1px solid #e2e8f0;
+        }
+        .mcp-roadmap-section-icon {
+          width: 36px; height: 36px; border-radius: 10px;
+          background: #dbeafe; display: flex; align-items: center;
+          justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+        }
+        .mcp-roadmap-section-title { font-weight: 800; font-size: 0.95rem; color: #0f172a; flex: 1; }
+        .mcp-roadmap-section-meta  { font-size: 0.75rem; color: #64748b; font-weight: 600; }
+        .mcp-roadmap-body { padding: 1rem 1.25rem 1.25rem; }
+        .mcp-roadmap { display: flex; gap: 0.6rem; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #e2e8f0 transparent; padding-bottom: 4px; }
+        .mcp-roadmap::-webkit-scrollbar { height: 4px; }
+        .mcp-roadmap::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 999px; }
+        .mcp-day-card {
+          flex-shrink: 0; width: 90px;
+          border-radius: 16px; padding: 1rem 0.6rem;
+          display: flex; flex-direction: column; align-items: center; gap: 0.45rem;
+          border: 1.5px solid #e2e8f0;
+          background: #f8fafc; transition: all 0.15s;
+        }
+        .mcp-day-card:hover:not(.today) { background: #f0fdf4; border-color: #a7f3d0; transform: translateY(-2px); }
         .mcp-day-card.today {
           background: linear-gradient(135deg, #10b981, #059669);
           border-color: #059669;
-          box-shadow: 0 4px 16px rgba(16,185,129,0.3);
+          box-shadow: 0 6px 20px rgba(16,185,129,0.35);
+          transform: translateY(-3px);
         }
-        .mcp-day-label { font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-        .mcp-day-card.today .mcp-day-label { color: rgba(255,255,255,0.8); }
-        .mcp-day-num { font-size: 0.75rem; font-weight: 600; color: #64748b; }
+        .mcp-day-label { font-size: 0.68rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; }
+        .mcp-day-card.today .mcp-day-label { color: rgba(255,255,255,0.85); }
+        .mcp-day-num { font-size: 0.78rem; font-weight: 700; color: #64748b; }
         .mcp-day-card.today .mcp-day-num { color: white; }
-        .mcp-day-emoji { font-size: 1.3rem; }
-        .mcp-day-task-mini { font-size: 0.6rem; color: #64748b; text-align: center; line-height: 1.3; max-width: 70px; }
-        .mcp-day-card.today .mcp-day-task-mini { color: rgba(255,255,255,0.9); }
+        .mcp-day-emoji { font-size: 1.5rem; }
+        .mcp-day-task-mini { font-size: 0.62rem; color: #64748b; text-align: center; line-height: 1.4; max-width: 78px; }
+        .mcp-day-card.today .mcp-day-task-mini { color: rgba(255,255,255,0.92); }
 
         /* ── Empty state ── */
         .mcp-empty { text-align: center; padding: 4rem 2rem; color: #94a3b8; }
@@ -854,7 +879,7 @@ export const MyCropsPage: React.FC = () => {
 
                     <div className="mcp-folder-body" style={{ padding: '1.5rem' }}>
                       {/* Today's Highlight bar */}
-                      <div className="mcp-today-bar" style={{ margin: '0 0 1.5rem' }}>
+                      <div className="mcp-today-bar" style={{ margin: '0 0 1.25rem' }}>
                         <div className="mcp-today-icon">☀️</div>
                         <div>
                           <p className="mcp-today-label">Today's Priority Task</p>
@@ -862,7 +887,28 @@ export const MyCropsPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* ─── 4 Sub-folders ─── */}
+                      {/* ── 7-Day Roadmap — always visible in dashboard ── */}
+                      <div className="mcp-roadmap-section" style={{ marginBottom: '1.5rem' }}>
+                        <div className="mcp-roadmap-section-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                          <div className="mcp-roadmap-section-icon">🗓️</div>
+                          <span className="mcp-roadmap-section-title" style={{ fontWeight: '600', color: '#1e293b' }}>7-Day Growth Roadmap</span>
+                          <span className="mcp-roadmap-section-meta" style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: 'auto' }}>Day {Math.floor((Date.now()-new Date(crop.createdAt).getTime())/86400000)+1}</span>
+                        </div>
+                        <div className="mcp-roadmap-body">
+                          <div className="mcp-roadmap" style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+                            {roadmap.map((d, i) => (
+                              <div key={i} className={`mcp-day-card ${d.isToday ? 'today' : ''}`} style={{ minWidth: '100px', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: d.isToday ? '#f0fdf4' : 'white' }}>
+                                <span className="mcp-day-label" style={{ fontSize: '0.7rem', fontWeight: '700', color: d.isToday ? '#16a34a' : '#64748b' }}>{d.isToday ? 'TODAY' : d.dayLabel}</span>
+                                <div className="mcp-day-num" style={{ fontSize: '0.85rem', fontWeight: '600' }}>Day {d.day+1}</div>
+                                <div className="mcp-day-emoji" style={{ fontSize: '1.2rem', margin: '0.25rem 0' }}>{(d.task ?? '').match(/\p{Emoji}/u)?.[0] ?? '🌿'}</div>
+                                <div className="mcp-day-task-mini" style={{ fontSize: '0.75rem', color: '#475569', lineHeight: '1.2' }}>{(d.task ?? '').replace(/\p{Emoji}/gu,'').slice(0,30).trim()}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ─── Other Sub-folders ─── */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
 
                         {/* SUB 1: Daily Checklist */}
@@ -894,32 +940,6 @@ export const MyCropsPage: React.FC = () => {
                                   ))}
                                 </div>
                               )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* SUB 2: 7-Day Roadmap */}
-                        <div className={`mcp-sub-folder ${isSubOpen(crop._id,'roadmap') ? 'active' : ''}`}>
-                          <div className="mcp-sub-header" onClick={() => toggleSub(crop._id,'roadmap')}>
-                            <div className="mcp-sub-icon" style={{ background: '#dbeafe' }}>🗓️</div>
-                            <span className="mcp-sub-label">7-Day Roadmap</span>
-                            <span className="mcp-sub-meta">Day {Math.floor((Date.now()-new Date(crop.createdAt).getTime())/86400000)+1}</span>
-                            <div className={`mcp-sub-chevron ${isSubOpen(crop._id,'roadmap') ? 'open' : ''}`}>
-                              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            </div>
-                          </div>
-                          {isSubOpen(crop._id,'roadmap') && (
-                            <div className="mcp-sub-body">
-                              <div className="mcp-roadmap">
-                                {roadmap.map((d, i) => (
-                                  <div key={i} className={`mcp-day-card ${d.isToday ? 'today' : ''}`}>
-                                    <span className="mcp-day-label">{d.isToday ? 'TODAY' : d.dayLabel}</span>
-                                    <span className="mcp-day-num">Day {d.day+1}</span>
-                                    <span className="mcp-day-emoji">{d.task.match(/\p{Emoji}/u)?.[0] ?? '🌿'}</span>
-                                    <span className="mcp-day-task-mini">{d.task.replace(/\p{Emoji}/gu,'').slice(0,30).trim()}</span>
-                                  </div>
-                                ))}
-                              </div>
                             </div>
                           )}
                         </div>

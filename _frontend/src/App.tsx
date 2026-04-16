@@ -11,6 +11,7 @@ import { FeaturePage } from '../components/features/FeaturePage';
 import { MyCropsPage } from '../components/features/MyCropsPage';
 import { AIAssistant } from '../components/features/AIAssistant';
 import { MarketPrices } from '../components/features/MarketPrices';
+import { CropInsurance } from '../components/features/CropInsurance';
 import './App.css';
 
 const ComingSoon: React.FC<{ title: string; emoji?: string }> = ({ title, emoji = '🚧' }) => (
@@ -40,6 +41,7 @@ const App: React.FC = () => {
             {/* Feature pages */}
             <Route path="/my-crops"      element={<MyCropsPage />} />
             <Route path="/farm-finance"  element={<FeaturePage sectionIndex={2} />} />
+            <Route path="/crop-insurance" element={<CropInsurance />} />
             <Route path="/market-prices" element={<MarketPrices />} />
             <Route path="/ai-assistant"  element={<AIAssistant />} />
             <Route path="/rewards"       element={<FeaturePage sectionIndex={5} />} />

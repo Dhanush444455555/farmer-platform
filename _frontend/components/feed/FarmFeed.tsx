@@ -603,11 +603,29 @@ export const FarmFeed: React.FC = () => {
   const addStoryRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let localPosts: Post[] = [];
+    try {
+      localPosts = JSON.parse(localStorage.getItem('farm_feed_posts_local') || '[]');
+    } catch {}
+
     fetch(`${API}/api/posts`)
       .then(r => r.json())
-      .then(data => { if (Array.isArray(data) && data.length > 0) setPosts([...data, ...FALLBACK_POSTS]); })
-      .catch(() => {});
+      .then(data => {
+         const serverPosts = (Array.isArray(data) && data.length > 0) ? data : [];
+         setPosts([...localPosts, ...serverPosts, ...FALLBACK_POSTS]);
+      })
+      .catch(() => {
+         setPosts([...localPosts, ...FALLBACK_POSTS]);
+      });
   }, []);
+
+  const handleNewPost = (p: Post) => {
+    setPosts(prev => [p, ...prev]);
+    try {
+      const local = JSON.parse(localStorage.getItem('farm_feed_posts_local') || '[]');
+      localStorage.setItem('farm_feed_posts_local', JSON.stringify([p, ...local]));
+    } catch {}
+  };
 
   const handleMarkSeen = (id: number) => setStories(prev => prev.map(s => s.id === id ? { ...s, seen: true } : s));
   const handleStoryFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1168,7 +1186,7 @@ export const FarmFeed: React.FC = () => {
       {showCreate && (
         <CreatePostModal
           onClose={() => setShowCreate(false)}
-          onPost={(p) => setPosts(prev => [p, ...prev])}
+          onPost={handleNewPost}
         />
       )}
 

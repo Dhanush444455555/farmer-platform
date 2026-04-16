@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Store, MessageSquare, Sprout,
   Leaf, ShoppingBag, IndianRupee, BarChart2,
-  Cpu, Gift, Bell, MessageCircle,
+  Cpu, Gift, Bell, MessageCircle, ShieldCheck
 } from 'lucide-react';
 import './layout.css';
 
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/my-crops',    icon: <Leaf size={20} />,            label: 'My Active Crops' },
   { to: '/mkt-listings',icon: <ShoppingBag size={20} />,     label: 'Mkt Listings',   badge: 3 },
   { to: '/farm-finance',icon: <IndianRupee size={20} />,     label: 'Farm Finance' },
+  { to: '/crop-insurance',icon: <ShieldCheck size={20} />,   label: 'Crop Insurance' },
   { to: '/market-prices',icon: <BarChart2 size={20} />,      label: 'Market Prices' },
   { to: '/ai-assistant',icon: <Cpu size={20} />,             label: 'AI Assistant',   badge: 1 },
   { to: '/rewards',     icon: <Gift size={20} />,            label: 'Rewards & Offers' },
