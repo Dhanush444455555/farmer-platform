@@ -18,7 +18,7 @@ const STATIC_NAV = [
   { to: '/crop-insurance',icon: <ShieldCheck     size={20} />, label: 'Crop Insurance' },
   { to: '/market-prices', icon: <BarChart2       size={20} />, label: 'Market Prices' },
   { to: '/ai-assistant',  icon: <Cpu             size={20} />, label: 'AI Assistant',  badge: 1 },
-  { to: '/support',       icon: <MessageCircle   size={20} />, label: 'Connect & Support' },
+
 ];
 
 function readBadge(): number {

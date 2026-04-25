@@ -18,15 +18,15 @@ interface MarketItem {
 
 // ─── Dummy Data Generator ─────────────────────────────────────────────────────
 const MOCK_PRICES: MarketItem[] = [
-  { id: '1', name: 'Tomato (Local)', category: 'Vegetables', price: 28, unit: 'kg', trend: 'up', changeStr: '+₹4.00 (16%)', market: 'Azadpur Mandi, Delhi', lastUpdated: 'Just now' },
-  { id: '2', name: 'Onion (Red)', category: 'Vegetables', price: 42, unit: 'kg', trend: 'stable', changeStr: '0.00 (0%)', market: 'Lasalgaon, MH', lastUpdated: '10 mins ago' },
-  { id: '3', name: 'Potato (Jyoti)', category: 'Vegetables', price: 18, unit: 'kg', trend: 'down', changeStr: '-₹2.00 (10%)', market: 'Agra Mandi, UP', lastUpdated: '1 hour ago' },
-  { id: '4', name: 'Wheat (Sharbati)', category: 'Grains', price: 2850, unit: 'Quintal', trend: 'up', changeStr: '+₹150 (5.5%)', market: 'Sehore, MP', lastUpdated: '3 hours ago' },
-  { id: '5', name: 'Paddy (Basmati 1121)', category: 'Grains', price: 3400, unit: 'Quintal', trend: 'up', changeStr: '+₹80 (2.4%)', market: 'Karnal, HR', lastUpdated: 'Just now' },
-  { id: '6', name: 'Mango (Alphonso)', category: 'Fruits', price: 850, unit: 'Dozen', trend: 'down', changeStr: '-₹100 (10%)', market: 'Ratnagiri, MH', lastUpdated: '30 mins ago' },
-  { id: '7', name: 'Apple (Kashmiri)', category: 'Fruits', price: 120, unit: 'kg', trend: 'stable', changeStr: '0.00 (0%)', market: 'Sopore, J&K', lastUpdated: '2 hours ago' },
-  { id: '8', name: 'Cotton', category: 'Cash Crops', price: 6800, unit: 'Quintal', trend: 'down', changeStr: '-₹200 (2.8%)', market: 'Rajkot, GJ', lastUpdated: '4 hours ago' },
-  { id: '9', name: 'Sugarcane', category: 'Cash Crops', price: 380, unit: 'Quintal', trend: 'stable', changeStr: '0.00 (0%)', market: 'Meerut, UP', lastUpdated: 'Yesterday' },
+  { id: '1', name: 'Tomato (Local)', category: 'Vegetables', price: 28, unit: 'kg', trend: 'up', changeStr: '+₹4.00 (16%)', market: 'APMC Yeshwanthpur, Karnataka', lastUpdated: 'Just now' },
+  { id: '2', name: 'Onion (Red)', category: 'Vegetables', price: 42, unit: 'kg', trend: 'stable', changeStr: '0.00 (0%)', market: 'APMC Hubli, Karnataka', lastUpdated: '10 mins ago' },
+  { id: '3', name: 'Potato (Jyoti)', category: 'Vegetables', price: 18, unit: 'kg', trend: 'down', changeStr: '-₹2.00 (10%)', market: 'APMC Belagavi, Karnataka', lastUpdated: '1 hour ago' },
+  { id: '4', name: 'Ragi', category: 'Grains', price: 3200, unit: 'Quintal', trend: 'up', changeStr: '+₹150 (5.5%)', market: 'APMC Mandya, Karnataka', lastUpdated: '3 hours ago' },
+  { id: '5', name: 'Paddy (Sona Masuri)', category: 'Grains', price: 3400, unit: 'Quintal', trend: 'up', changeStr: '+₹80 (2.4%)', market: 'APMC Raichur, Karnataka', lastUpdated: 'Just now' },
+  { id: '6', name: 'Mango (Alphonso)', category: 'Fruits', price: 850, unit: 'Dozen', trend: 'down', changeStr: '-₹100 (10%)', market: 'APMC Dharwad, Karnataka', lastUpdated: '30 mins ago' },
+  { id: '7', name: 'Coconut', category: 'Cash Crops', price: 120, unit: 'kg', trend: 'stable', changeStr: '0.00 (0%)', market: 'APMC Tumkur, Karnataka', lastUpdated: '2 hours ago' },
+  { id: '8', name: 'Cotton', category: 'Cash Crops', price: 6800, unit: 'Quintal', trend: 'down', changeStr: '-₹200 (2.8%)', market: 'APMC Davanagere, Karnataka', lastUpdated: '4 hours ago' },
+  { id: '9', name: 'Arecanut', category: 'Cash Crops', price: 38000, unit: 'Quintal', trend: 'stable', changeStr: '0.00 (0%)', market: 'APMC Shimoga, Karnataka', lastUpdated: 'Yesterday' },
 ];
 
 const CATEGORIES = ['All', 'Vegetables', 'Fruits', 'Grains', 'Cash Crops'];
@@ -38,14 +38,14 @@ export const MarketPrices: React.FC = () => {
   const [search, setSearch] = useState('');
   
   // Reading API key from the local environment variable
-  const apiKey = import.meta.env.VITE_AGMARKNET_API_KEY || '579b464db66ec23bdd00000194e769143c0d486d5fe5a38e063b96fc';
+  const apiKey = import.meta.env.VITE_AGMARKNET_API_KEY || '579b464db66ec23bdd0000015ce1458e791546e44c629c8909739a59';
 
   // ─── API Integration Point ──────────────────────────────────────────────────
   const fetchPrices = async () => {
     setLoading(true);
     try {
       if (apiKey && apiKey.trim() !== '') {
-        let url = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${apiKey}&format=json&limit=100`;
+        let url = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${apiKey}&format=json&limit=100&filters[state]=Karnataka`;
         
         // Dynamic Server-Side Search for Commodities
         if (search.trim()) {

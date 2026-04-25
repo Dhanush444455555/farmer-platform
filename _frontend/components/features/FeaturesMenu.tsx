@@ -103,18 +103,7 @@ const FOLDERS: FolderSection[] = [
     ],
     badgeCount: 5,
   },
-  {
-    icon: <MessageCircle size={20} color="#fff" />,
-    iconBg: 'linear-gradient(135deg, #84cc16, #65a30d)',
-    title: 'Connect & Support',
-    subtitle: 'Chat with experts, buyers and the community',
-    items: [
-      { label: '👨‍🌾 Talk to Agri Expert' },
-      { label: '🤝 Buyer Direct Chat' },
-      { label: '💬 Community Forum' },
-      { label: '🚩 Report an Issue' },
-    ],
-  },
+
 ];
 
 const FolderRow: React.FC<{ section: FolderSection; isOpen: boolean; onToggle: () => void }> = ({ section, isOpen, onToggle }) => {
